@@ -1,4 +1,4 @@
-"""Resume Analyser - FastAPI backend that scores resumes with Google Gemini."""
+
 
 import io
 import json
@@ -24,7 +24,7 @@ MAX_FILE_MB = int(os.getenv("MAX_FILE_MB", "10"))
 SHORTLIST_THRESHOLD = int(os.getenv("SHORTLIST_THRESHOLD", "70"))  # job-match % needed to shortlist
 FRONTEND_DIR = Path(__file__).parent / "frontend"
 
-# Retry overloaded-server errors with exponential backoff (429 quota errors fall back to another model instead).
+
 RETRY = types.HttpRetryOptions(attempts=4, initial_delay=2, max_delay=20,
                                http_status_codes=[500, 502, 503, 504])
 client = genai.Client(api_key=API_KEY, http_options=types.HttpOptions(retry_options=RETRY)) if API_KEY else None
