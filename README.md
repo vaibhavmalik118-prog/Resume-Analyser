@@ -1,98 +1,217 @@
 # Resume Analyser
 
-An AI resume analyser built with **FastAPI** and **Google Gemini**. Upload a resume (PDF, DOCX or TXT) and,
-optionally, paste a job description. You get back:
+An AI-powered resume analyser built with **FastAPI** and **Google Gemini**. Upload a resume in **PDF, DOCX, or TXT** format and optionally provide a job description to receive detailed resume analysis and job-matching insights.
 
-- **Overall score** and **ATS-friendliness score** (0–100)
-- Candidate details pulled from the resume (name, title, contact info, experience)
-- A short summary, plus strengths and weaknesses
-- A score and feedback for each resume section
-- Improvement suggestions sorted by priority
-- Technical and soft skills found
-- **Job match score** with matched and missing skills, plus an **eligible / not a good match** shortlisting verdict (only when you paste a job description)
+## Features
 
-## Project structure
+- **Overall Resume Score** and **ATS-Friendliness Score** (0–100)
+- Candidate details extracted from the resume:
+  - Name
+  - Professional title
+  - Contact information
+  - Experience
+- AI-generated resume summary
+- Identification of **strengths and weaknesses**
+- Section-wise scoring and feedback
+- **Improvement suggestions** prioritized by importance
+- Detection of **technical and soft skills**
+- **Job Match Score** based on the provided job description
+- Matched and missing skills identification
+- **Eligible / Not a Good Match** shortlisting verdict
+- Supports **PDF, DOCX, and TXT** resumes
+- Modern frontend with **light and dark mode**
 
-```
+## Project Structure
+
+```text
 ResumeAnalyser/
-├── main.py            # FastAPI backend: file parsing + Gemini call
+├── main.py                 # FastAPI backend: file parsing + Gemini API call
 ├── frontend/
-│   ├── index.html     # UI
-│   ├── style.css      # Styles (light and dark mode)
-│   └── app.js         # Upload, API call, result rendering
-├── .env               # Your Gemini API key and settings (never commit this)
-├── .env.example       # Template for .env (safe to share)
-├── requirements.txt
-└── README.md
+│   ├── index.html          # User interface
+│   ├── style.css           # Styling with light and dark mode
+│   └── app.js              # Upload, API calls, and result rendering
+├── .env                    # Gemini API key and settings (never commit this)
+├── .env.example            # Environment variable template
+├── requirements.txt        # Python dependencies
+└── README.md               # Project documentation
 ```
 
 ## Setup
 
-1. **Install Python 3.10+**, then install the dependencies:
+### 1. Install Python
 
-   ```bash
-   pip install -r requirements.txt
-   ```
+Install **Python 3.10 or higher**.
 
-2. **Get a Gemini API key** from <https://aistudio.google.com/apikey>. Copy `.env.example` to `.env`
-   (`.env` is not in git because it holds your key) and put the key in it:
+Then install the required dependencies:
 
-   ```env
-   GEMINI_API_KEY=your-real-key
-   ```
+```bash
+pip install -r requirements.txt
+```
 
-3. **Run the app:**
+### 2. Get a Gemini API Key
 
-   ```bash
-   python main.py
-   ```
+Get your Gemini API key from Google AI Studio.
 
-4. Open **<http://127.0.0.1:8000>** in your browser.
+Copy `.env.example` to `.env` and add your API key:
 
-## Configuration (`.env`)
+```env
+GEMINI_API_KEY=your-real-key
+```
 
-| Variable         | Default            | Description                                   |
-|------------------|--------------------|-----------------------------------------------|
-| `GEMINI_API_KEY` | *(required)*       | Your Google Gemini API key                    |
-| `GEMINI_MODEL`   | `gemini-3.8-flash` | Gemini model to use (e.g. a Pro model)   |
-| `GEMINI_FALLBACK_MODELS` | `gemini-3.7-flash,gemini-3.5-flash` | Tried in order when the main model is out of quota or overloaded |
-| `SHORTLIST_THRESHOLD` | `70` | Job-match % at or above which a candidate is shown as eligible for shortlisting |
-| `MAX_FILE_MB`    | `10`               | Largest resume file you can upload            |
-| `PORT`           | `8000`             | Port the server listens on                    |
+**Never upload your `.env` file or expose your API key publicly.**
+
+### 3. Run the Application
+
+Start the FastAPI server:
+
+```bash
+python main.py
+```
+
+The application will normally run at:
+
+```text
+http://127.0.0.1:8000
+```
+
+Open that address in your browser.
+
+## Configuration
+
+The application can be configured using the `.env` file.
+
+| Variable | Default | Description |
+|---|---|---|
+| `GEMINI_API_KEY` | Required | Google Gemini API key |
+| `GEMINI_MODEL` | `gemini-3.8-flash` | Gemini model used for analysis |
+| `GEMINI_FALLBACK_MODELS` | `gemini-3.7-flash,gemini-3.5-flash` | Fallback models used when the main model is unavailable |
+| `SHORTLIST_THRESHOLD` | `70` | Job-match score required for shortlisting |
+| `MAX_FILE_MB` | `10` | Maximum resume file size |
+| `PORT` | `8000` | Port used by the FastAPI server |
 
 ## API
 
-| Method | Path           | Description                                                     |
-|--------|----------------|-----------------------------------------------------------------|
-| GET    | `/`            | The web UI                                                      |
-| GET    | `/api/health`  | Shows the model in use and whether an API key is set            |
-| POST   | `/api/analyze` | Form fields: `resume` (file), `job_description` (text, optional) |
+| Method | Path | Description |
+|---|---|---|
+| GET | `/` | Opens the web interface |
+| GET | `/api/health` | Shows model information and API-key status |
+| POST | `/api/analyze` | Analyzes an uploaded resume and optional job description |
 
-Example with curl:
+### Example API Request
 
 ```bash
-curl -F "resume=@my_resume.pdf" -F "job_description=Senior Python developer..." http://127.0.0.1:8000/api/analyze
+curl -F "resume=@my_resume.pdf" -F "job_description=Senior Python Developer..." http://127.0.0.1:8000/api/analyze
 ```
 
-Interactive API docs are at <http://127.0.0.1:8000/docs>.
+Interactive API documentation is available at:
 
-## How it works
+```text
+http://127.0.0.1:8000/docs
+```
 
-- **PDFs** go straight to Gemini, which reads them natively, including layout and tables.
-- **DOCX** files are converted to text with `python-docx`. **TXT** files are read as they are.
-- Gemini's **structured output** (`response_json_schema`) means the response always matches a fixed JSON
-  schema, so the frontend can render it reliably.
-- Today's date is sent with every request, so "Present" and years of experience are calculated correctly.
-- If the main model is out of quota (429) or still overloaded after 4 retries (5xx), the app moves on to the
-  next model in `GEMINI_FALLBACK_MODELS`.
-- Placeholder values such as "Not Provided" or "N/A" are blanked, so missing details never show as real data.
-- The shortlisting verdict is a fixed rule in `main.py` (`match_score >= SHORTLIST_THRESHOLD`), not decided by
-  the model.
+## How It Works
+
+### Resume Processing
+
+- **PDF files** are sent directly to Gemini for analysis, allowing the model to process document layouts and tables.
+- **DOCX files** are converted to text using `python-docx`.
+- **TXT files** are read directly as text.
+
+### AI Analysis
+
+Google Gemini analyzes the resume and produces structured results including:
+
+- Resume score
+- ATS score
+- Candidate information
+- Summary
+- Strengths
+- Weaknesses
+- Section-wise feedback
+- Technical skills
+- Soft skills
+- Improvement recommendations
+
+### Job Description Matching
+
+When a job description is provided, the system additionally calculates a **job match score** and identifies:
+
+- Skills that match the job description
+- Missing skills
+- Relevant experience
+- Areas that need improvement
+- Shortlisting eligibility
+
+The shortlisting decision is based on the configured threshold in `SHORTLIST_THRESHOLD`.
+
+### Structured AI Output
+
+Gemini's structured output using `response_json_schema` ensures that the response follows a predefined JSON structure, allowing the frontend to reliably display the results.
+
+### Date-Aware Analysis
+
+The current date is sent with each request so that information such as employment status and years of experience can be interpreted correctly.
+
+### Fallback Models
+
+If the primary Gemini model is unavailable because of quota limits or temporary server overload, the application can automatically attempt the configured fallback models.
+
+### Missing Information
+
+Placeholder values such as `"Not Provided"` and `"N/A"` are filtered so that missing information is not displayed as actual candidate data.
 
 ## Troubleshooting
 
-- **"GEMINI_API_KEY is not set"**: add your key to `.env` and restart the server.
-- **"Invalid GEMINI_API_KEY"**: check that you copied the whole key, with no quotes or spaces.
-- **Quota used up (429)**: the free tier allows about 20 requests per model per day. The app automatically switches to the fallback models; when they are all used up, wait for the daily reset or enable billing on your key.
-- **"Gemini servers are busy" (502)**: every model was overloaded at once. Wait a minute and try again.
-- **Scanned (image-only) PDFs** work, because Gemini reads the page images. A DOCX made of images will have no text to analyse.
+### `GEMINI_API_KEY is not set`
+
+Make sure your `.env` file exists and contains:
+
+```env
+GEMINI_API_KEY=your-real-key
+```
+
+Restart the server after modifying the `.env` file.
+
+### `Invalid GEMINI_API_KEY`
+
+Check that you copied the complete API key correctly and that there are no unnecessary spaces or quotation marks.
+
+### Quota Exceeded / `429`
+
+If the selected Gemini model reaches its quota, the application can attempt the configured fallback models. If all available models are exhausted, wait for the quota to reset or use an API key with appropriate billing/quota.
+
+### Gemini Servers Are Busy
+
+If Gemini returns a temporary server error, wait briefly and try the request again.
+
+### Scanned PDFs
+
+Image-only or scanned PDFs can still be analyzed when Gemini is able to process the document images. However, DOCX files containing only images may not provide extractable text.
+
+## Security
+
+**Do not commit your `.env` file.**
+
+Your `.gitignore` should contain:
+
+```text
+.env
+```
+
+Never upload your Gemini API key, passwords, tokens, or other private credentials to GitHub.
+
+## Future Improvements
+
+Potential future enhancements include:
+
+- Support for additional resume formats
+- More detailed job-role recommendations
+- Resume rewriting and optimization
+- Industry-specific ATS analysis
+- Skill-gap learning recommendations
+- Resume comparison against multiple job descriptions
+- Downloadable analysis reports
+
+## License
+
+This project is intended for educational and project-development purposes.
